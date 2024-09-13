@@ -178,14 +178,15 @@ def create_visualizations(data):
 def send_email(new_data, seasonality_buf, yoy_buf, interactive_buf, excel_buffer):
     logging.info("Starting email send process...")
     sender_email = "dsierraramirez115@gmail.com"
-    receiver_email = "diegosierra01@yahoo.com"
+    receiver_email= ["diegosierra01@yahoo.com",
+                    "arnav.ashruchi@gmail.com"]
     password = os.environ['EMAIL_PASSWORD']
     
     logging.info(f"Sender: {sender_email}, Receiver: {receiver_email}")
     
     message = MIMEMultipart()
     message["From"] = sender_email
-    message["To"] = receiver_email
+    message["To"] = ", ".join(receiver_email)
     message["Subject"] = f"TSA Travel Update - {new_data['Date'].iloc[0].strftime('%Y-%m-%d')}"
     
     body = f"""
