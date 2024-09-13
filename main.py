@@ -179,7 +179,9 @@ def send_email(new_data, seasonality_buf, yoy_buf, interactive_buf, excel_buffer
     logging.info("Starting email send process...")
     sender_email = "dsierraramirez115@gmail.com"
     receiver_email= ["diegosierra01@yahoo.com",
-                    "arnav.ashruchi@gmail.com"]
+                    "arnav.ashruchi@gmail.com",
+                    "jordan.valer@lmrpartners.com"
+                    ]
     password = os.environ['EMAIL_PASSWORD']
     
     logging.info(f"Sender: {sender_email}, Receiver: {receiver_email}")
@@ -197,10 +199,10 @@ def send_email(new_data, seasonality_buf, yoy_buf, interactive_buf, excel_buffer
     <p>Travel Number: {new_data['Travel Number'].iloc[0]:,}</p>
     <p>Please find attached:</p>
     <ul>
-        <li>A static image of the seasonality plot</li>
-        <li>A static image of the YoY comparison plot</li>
-        <li>An interactive HTML file with the seasonality plot</li>
-        <li>The updated Excel file with all data</li>
+        <li>The seasonality plot</li>
+        <li>YoY comparison plot</li>
+        <li>Interactive HTML file with the seasonality plot</li>
+        <li>Excel file with all data</li>
     </ul>
     <h3>Seasonality Plot</h3>
     <img src="cid:seasonality_plot">
