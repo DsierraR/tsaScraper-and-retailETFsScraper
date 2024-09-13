@@ -22,7 +22,7 @@ s3_client = boto3.client(
     aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
     region_name=os.environ['AWS_REGION']
 )
-bucket_name = os.environ['ctabucketdata']
+bucket_name = 'ctabucketdata'
 file_key = 'tsa_data.xlsx'
 
 # Function to scrape TSA data
