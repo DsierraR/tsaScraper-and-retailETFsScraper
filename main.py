@@ -14,6 +14,7 @@ import os
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import boto3
+import logging
 
 # AWS S3 configuration
 s3_client = boto3.client(
