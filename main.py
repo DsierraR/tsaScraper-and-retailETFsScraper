@@ -180,6 +180,7 @@ def send_email(new_data, seasonality_buf, yoy_buf, interactive_buf, excel_buffer
     sender_email = "dsierraramirez115@gmail.com"
     receiver_email= ["diegosierra01@yahoo.com",
                     "arnav.ashruchi@gmail.com",
+                    "jordan.valer@lmrpartners.com"
                     ]
     password = os.environ['EMAIL_PASSWORD']
     
