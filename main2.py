@@ -31,7 +31,7 @@ receiver_email = ["diegosierra01@yahoo.com", "arnav.ashruchi@gmail.com"]
 email_password = os.environ['EMAIL_PASSWORD']
 
 # AWS S3 Configuration
-s3_bucket_name = os.environ['S3_BUCKET_NAME']
+s3_bucket_name = 'ctabucketdata'
 s3_file_key = 'shares_outstanding_data.xlsx'
 
 # ETF Tickers
