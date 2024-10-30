@@ -26,13 +26,13 @@ import boto3
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Email Configuration
-sender_email = os.getenv("SENDER_EMAIL")
+sender_email = os.environ['SENDER_EMAIL']
 receiver_email = ["diegosierra01@yahoo.com", "arnav.ashruchi@gmail.com"]
-email_password = os.getenv("EMAIL_PASSWORD")
+email_password = os.environ['EMAIL_PASSWORD']
 
 # AWS S3 Configuration
-s3_bucket_name = "ctabucketdata"
-s3_file_key = "shares_outstanding_data.xlsx"
+s3_bucket_name = os.environ['S3_BUCKET_NAME']
+s3_file_key = 'shares_outstanding_data.xlsx'
 
 # ETF Tickers
 ETF_TICKERS_FIRST = ['USO', 'BNO', 'UGA']
@@ -59,9 +59,9 @@ service = ChromeService()
 # Initialize S3 client
 s3_client = boto3.client(
     's3',
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    region_name=os.getenv("AWS_REGION")
+    aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+    aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+    region_name=os.environ['AWS_REGION']
 )
 
 def fetch_shares_outstanding_first(etf_ticker):
@@ -208,7 +208,7 @@ def send_email_with_visualization(new_row, previous_row):
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(sender_email, email_password)
+            server.login(sender_email, password)
             server.send_message(message)
         logging.info("Email with visualization sent successfully.")
     except Exception as e:
