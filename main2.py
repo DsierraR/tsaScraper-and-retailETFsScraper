@@ -26,7 +26,7 @@ import boto3
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Email Configuration
-sender_email = "dsierraramirez115@gmail.com"  # Defined directly as in your previous example
+sender_email = "dsierraramirez115@gmail.com"  # Directly set as per the provided example
 receiver_email = ["diegosierra01@yahoo.com", "arnav.ashruchi@gmail.com"]
 email_password = os.environ['EMAIL_PASSWORD']  # Retrieved from environment variable
 
@@ -37,7 +37,7 @@ s3_client = boto3.client(
     aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
     region_name=os.environ['AWS_REGION']
 )
-bucket_name = 'ctabucketdata'  # Defined directly as in your example
+bucket_name = 'ctabucketdata'  # Directly set as in your example
 file_key = 'shares_outstanding_data.xlsx'
 
 # ETF Tickers
@@ -177,11 +177,18 @@ def send_email_with_visualization(new_row, previous_row):
     img = MIMEImage(img_buffer.getvalue())
     img.add_header("Content-ID", "<visualization>")
     message.attach(img)
+
+    # Attach the Excel file from S3
+    excel_buffer = download_excel_from_s3()
+    excel_attachment = MIMEApplication(excel_buffer.getvalue(), _subtype="xlsx")
+    excel_attachment.add_header("Content-Disposition", "attachment", filename="shares_outstanding_data.xlsx")
+    message.attach(excel_attachment)
+
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(sender_email, email_password)
             server.send_message(message)
-        logging.info("Email with visualization sent successfully.")
+        logging.info("Email with visualization and Excel attachment sent successfully.")
     except Exception as e:
         logging.error(f"An error occurred while sending the email: {e}")
 
