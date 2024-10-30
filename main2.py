@@ -14,6 +14,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from openpyxl import load_workbook, Workbook
 from datetime import datetime
+import pytz
 import logging
 import os
 import numpy as np
@@ -26,9 +27,9 @@ import boto3
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Email Configuration
-sender_email = "dsierraramirez115@gmail.com"  # Directly set as per the provided example
+sender_email = "dsierraramirez115@gmail.com"
 receiver_email = ["diegosierra01@yahoo.com", "arnav.ashruchi@gmail.com"]
-email_password = os.environ['EMAIL_PASSWORD']  # Retrieved from environment variable
+email_password = os.environ['EMAIL_PASSWORD']
 
 # AWS S3 Configuration
 s3_client = boto3.client(
@@ -37,8 +38,11 @@ s3_client = boto3.client(
     aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
     region_name=os.environ['AWS_REGION']
 )
-bucket_name = 'ctabucketdata'  # Directly set as in your example
+bucket_name = 'ctabucketdata'
 file_key = 'shares_outstanding_data.xlsx'
+
+# Timezone setup
+cst = pytz.timezone('America/Chicago')
 
 # ETF Tickers
 ETF_TICKERS_FIRST = ['USO', 'BNO', 'UGA']
@@ -110,7 +114,7 @@ def upload_excel_to_s3(file_content):
     s3_client.put_object(Bucket=bucket_name, Key=file_key, Body=file_content)
 
 def update_excel(etf_data):
-    today_date = datetime.now().strftime('%Y-%m-%d')
+    today_date = datetime.now(cst).strftime('%Y-%m-%d')
     all_tickers = ETF_TICKERS_FIRST + ETF_TICKERS_SECOND
     new_row = [today_date] + [etf_data.get(ticker, 'N/A') for ticker in all_tickers]
     excel_buffer = download_excel_from_s3()
@@ -161,8 +165,8 @@ def send_email_with_visualization(new_row, previous_row):
     message = MIMEMultipart("related")
     message["From"] = sender_email
     message["To"] = ", ".join(receiver_email)
-    subject_date = datetime.strptime(date, '%Y-%m-%d').strftime('%B %d, %Y')
-    message["Subject"] = f"Retail Oil ETFs - Shares Outstanding Data {subject_date}"
+    subject_date = datetime.now(cst).strftime('%B %d, %Y')
+    message["Subject"] = "Retail Oil ETFs - Shares Outstanding Data"
     body = f"<p>Date: {date}</p>"
     changes = False
     for i, ticker in enumerate(ETF_TICKERS_FIRST + ETF_TICKERS_SECOND):
