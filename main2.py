@@ -26,7 +26,7 @@ import boto3
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Email Configuration
-sender_email = os.environ['SENDER_EMAIL']
+sender_email = "dsierraramirez115@gmail.com"
 receiver_email = ["diegosierra01@yahoo.com", "arnav.ashruchi@gmail.com"]
 email_password = os.environ['EMAIL_PASSWORD']
 
