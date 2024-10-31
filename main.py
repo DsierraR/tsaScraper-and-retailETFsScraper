@@ -35,7 +35,6 @@ def scrape_tsa_data():
     dates = soup.find_all('td', class_="views-field views-field-field-travel-number-date views-align-center")
     numbers = soup.find_all('td', class_="views-field views-field-field-travel-number views-align-center")
     
-    # Parse data from the table
     data = []
     for date, number in zip(dates, numbers):
         data.append({
@@ -43,22 +42,7 @@ def scrape_tsa_data():
             'Travel Number': int(number.text.strip().replace(',', ''))
         })
     
-    df = pd.DataFrame(data)
-    
-    # Check if today is Monday and add Saturday and Sunday data if necessary
-    if datetime.now().weekday() == 0:  # Monday
-        # Calculate Saturday and Sunday dates
-        saturday = datetime.now() - timedelta(days=2)
-        sunday = datetime.now() - timedelta(days=1)
-        
-        # Attempt to scrape for Saturday and Sunday
-        for day in [saturday, sunday]:
-            if day not in df['Date'].values:
-                # Try fetching previous data, for example from last available data point if feasible
-                previous_data = df[df['Date'] < day].iloc[0]
-                df = df.append({'Date': day, 'Travel Number': previous_data['Travel Number']}, ignore_index=True)
-    
-    return df
+    return pd.DataFrame(data)
 
 # Function to update Excel file in S3
 def update_excel(new_data):
@@ -194,7 +178,10 @@ def create_visualizations(data):
 def send_email(new_data, seasonality_buf, yoy_buf, interactive_buf, excel_buffer):
     logging.info("Starting email send process...")
     sender_email = "dsierraramirez115@gmail.com"
-    receiver_email= ["diegosierra01@yahoo.com"]
+    receiver_email= ["diegosierra01@yahoo.com",
+                    "arnav.ashruchi@gmail.com",
+                    "jordan.valer@lmrpartners.com"
+                    ]
     password = os.environ['EMAIL_PASSWORD']
     
     logging.info(f"Sender: {sender_email}, Receiver: {receiver_email}")
@@ -274,3 +261,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
