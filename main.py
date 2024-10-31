@@ -28,7 +28,7 @@ file_key = 'tsa_data.xlsx'
 
 # Function to scrape TSA data
 def scrape_tsa_data():
-    url = "https://www.tsa.gov/travel/passenger-volumes"
+    url = "https://www.tsa.gov/travel/passenger-volumes/2024"
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'html.parser')
     
@@ -194,8 +194,7 @@ def create_visualizations(data):
 def send_email(new_data, seasonality_buf, yoy_buf, interactive_buf, excel_buffer):
     logging.info("Starting email send process...")
     sender_email = "dsierraramirez115@gmail.com"
-    receiver_email= ["diegosierra01@yahoo.com",
-                    "arnav.ashruchi@gmail.com"]
+    receiver_email= ["diegosierra01@yahoo.com"]
     password = os.environ['EMAIL_PASSWORD']
     
     logging.info(f"Sender: {sender_email}, Receiver: {receiver_email}")
