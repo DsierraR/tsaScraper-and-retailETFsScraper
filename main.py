@@ -28,7 +28,7 @@ file_key = 'tsa_data.xlsx'
 
 # Function to scrape TSA data
 def scrape_tsa_data():
-    url = "https://www.tsa.gov/travel/passenger-volumes/2024"
+    url = "https://www.tsa.gov/travel/passenger-volumes"
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'html.parser')
     
