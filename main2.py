@@ -230,7 +230,7 @@ def send_email_with_visualization(new_row, previous_row):
     message = MIMEMultipart("related")
     message["From"] = sender_email
     message["To"] = ", ".join(receiver_email)
-    message["Subject"] = f"Retail Oil ETFs - Shares Outstanding Data - {datetime.now(cst).strftime('%B %d, %Y')}"
+    message["Subject"] = "Retail Oil ETFs - Shares Outstanding Data"
     
     img_buffer, df = create_visualization()
     latest = df.iloc[-1]
