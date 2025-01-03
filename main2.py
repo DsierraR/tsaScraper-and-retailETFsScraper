@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # Email Configuration
 sender_email = "dsierraramirez115@gmail.com"
-receiver_email = ["diegosierra01@yahoo.com", "arnav.ashruchi@gmail.com", "jordan.valer@lmrpartners.com"]
+receiver_email = ["diegosierra01@yahoo.com", "arnav.ashruchi@gmail.com"]
 email_password = os.environ['EMAIL_PASSWORD']
 
 # AWS S3 Configuration
