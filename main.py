@@ -31,18 +31,43 @@ def scrape_tsa_data():
     url = "https://www.tsa.gov/travel/passenger-volumes"
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'html.parser')
-    
-    dates = soup.find_all('td', class_="views-field views-field-field-travel-number-date views-align-center")
-    numbers = soup.find_all('td', class_="views-field views-field-field-travel-number views-align-center")
-    
+   
+    # Find all table rows (tr) after the header
+    table = soup.find('table')  # Find the first table
+    if not table:
+        raise ValueError("No table found on the page")
+       
+    rows = table.find_all('tr')[1:]  # Skip the header row
+   
     data = []
-    for date, number in zip(dates, numbers):
-        data.append({
-            'Date': datetime.strptime(date.text.strip(), '%m/%d/%Y'),
-            'Travel Number': int(number.text.strip().replace(',', ''))
-        })
+    for row in rows:
+        cells = row.find_all('td')
+        if len(cells) >= 2:  # Make sure we have both date and number
+            try:
+                # Extract and clean the date and number
+                date_str = cells[0].text.strip() 
+                number_str = cells[1].text.strip().replace(',', '')
+               
+                date = datetime.strptime(date_str, '%m/%d/%Y') 
+                number = int(number_str)
+               
+                data.append({
+                    'Date': date,
+                    'Travel Number': number
+                })
+            except (ValueError, IndexError) as e:
+                print(f"Error processing row: {e}")
+                continue
+   
+    if not data:
+        raise ValueError("No data could be scraped from the page")
+       
     
-    return pd.DataFrame(data)
+    df = pd.DataFrame(data)
+    print("Debug - DataFrame columns:", df.columns)
+    print("Debug - First row:", df.iloc[0] if not df.empty else "Empty DataFrame") 
+   
+    return df
 
 # Function to update Excel file in S3
 def update_excel(new_data):
@@ -50,18 +75,18 @@ def update_excel(new_data):
         # Download existing file from S3
         response = s3_client.get_object(Bucket=bucket_name, Key=file_key)
         existing_data = pd.read_excel(io.BytesIO(response['Body'].read()))
-        
+       
         # Combine and deduplicate data
         combined_data = pd.concat([existing_data, new_data]).drop_duplicates(subset='Date', keep='last')
         combined_data.sort_values('Date', ascending=False, inplace=True)
-        
+       
         # Save updated data back to S3
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
             combined_data.to_excel(writer, index=False)
         buffer.seek(0)
         s3_client.put_object(Bucket=bucket_name, Key=file_key, Body=buffer.getvalue())
-        
+       
         return combined_data
     except s3_client.exceptions.NoSuchKey:
         # If file doesn't exist, create a new one
@@ -77,83 +102,83 @@ def create_visualizations(data):
     # Prepare data for seasonality plot
     data['Year'] = data['Date'].dt.year
     data['DayOfYear'] = data['Date'].dt.dayofyear
-    
+   
     # Get current year and previous year
     current_year = datetime.now().year
     previous_year = current_year - 1
-    
+   
     # Filter last 5 years for seasonality plot
     data_5years = data[data['Year'] >= current_year - 5]
-    
+   
     # Create static matplotlib plot for seasonality
     plt.figure(figsize=(15, 8))
-    
+   
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
     years = sorted(data_5years['Year'].unique())
-    
+   
     for i, year in enumerate(years):
         year_data = data_5years[data_5years['Year'] == year]
         alpha = 0.3 if year != current_year else 1.0
-        plt.plot(year_data['DayOfYear'], year_data['Travel Number'], 
+        plt.plot(year_data['DayOfYear'], year_data['Travel Number'],
                  label=str(year), color=colors[i % len(colors)], linewidth=2, alpha=alpha)
-    
+   
     plt.title('TSA Travel Numbers - Seasonality (Last 5 Years)', fontsize=16)
     plt.xlabel('Month', fontsize=12)
     plt.ylabel('Number of Travelers', fontsize=12)
     plt.legend(title='Year', title_fontsize='12', fontsize='10')
-    
+   
     plt.xticks([1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335],
                ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
-    
+   
     plt.grid(True, linestyle='--', alpha=0.7)
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: format(int(x), ',')))
-    
+   
     # Save static seasonality plot to buffer
     seasonality_buf = io.BytesIO()
     plt.savefig(seasonality_buf, format='png', dpi=300, bbox_inches='tight')
     seasonality_buf.seek(0)
     plt.close()
-    
+   
     # Create YoY comparison chart
     plt.figure(figsize=(15, 8))
-    
+   
     # Calculate 2-week moving average for current and previous year
     data_prev_year = data[data['Year'] == previous_year].sort_values('Date')
     data_current_year = data[data['Year'] == current_year].sort_values('Date')
-    
+   
     data_prev_year['MA_14'] = data_prev_year['Travel Number'].rolling(window=14).mean()
     data_current_year['MA_14'] = data_current_year['Travel Number'].rolling(window=14).mean()
-    
+   
     plt.plot(data_prev_year['DayOfYear'], data_prev_year['MA_14'], label=str(previous_year), color='#ff7f0e', linewidth=2)
     plt.plot(data_current_year['DayOfYear'], data_current_year['MA_14'], label=str(current_year), color='#1f77b4', linewidth=2)
-    
+   
     plt.title(f'TSA Travel Numbers - YoY Comparison (2-Week Moving Average)', fontsize=16)
     plt.xlabel('Month', fontsize=12)
     plt.ylabel('Number of Travelers (2-Week Moving Average)', fontsize=12)
     plt.legend(title='Year', title_fontsize='12', fontsize='10')
-    
+   
     plt.xticks([1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335],
                ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])
-    
+   
     plt.grid(True, linestyle='--', alpha=0.7)
     plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: format(int(x), ',')))
-    
+   
     # Save YoY comparison plot to buffer
     yoy_buf = io.BytesIO()
     plt.savefig(yoy_buf, format='png', dpi=300, bbox_inches='tight')
     yoy_buf.seek(0)
     plt.close()
-    
+   
     # Create interactive Plotly plot for seasonality
     fig = make_subplots(specs=[[{"secondary_y": False}]])
-    
+   
     for i, year in enumerate(years):
         year_data = data_5years[data_5years['Year'] == year]
         fig.add_trace(
-            go.Scatter(x=year_data['DayOfYear'], y=year_data['Travel Number'], 
+            go.Scatter(x=year_data['DayOfYear'], y=year_data['Travel Number'],
                        mode='lines', name=str(year), line=dict(color=colors[i % len(colors)]))
         )
-    
+   
     fig.update_layout(
         title='TSA Travel Numbers - Seasonality (Last 5 Years)',
         xaxis_title='Month',
@@ -161,17 +186,17 @@ def create_visualizations(data):
         legend_title='Year',
         hovermode="x unified"
     )
-    
+   
     fig.update_xaxes(
         tickvals=[1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335],
         ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     )
-    
+   
     # Save interactive plot to HTML file
     interactive_buf = io.StringIO()
     fig.write_html(interactive_buf)
     interactive_buf.seek(0)
-    
+   
     return seasonality_buf, yoy_buf, interactive_buf
 
 # Function to send email
@@ -183,14 +208,14 @@ def send_email(new_data, seasonality_buf, yoy_buf, interactive_buf, excel_buffer
                     "jordan.valer@lmrpartners.com"
                     ]
     password = os.environ['EMAIL_PASSWORD']
-    
+   
     logging.info(f"Sender: {sender_email}, Receiver: {receiver_email}")
-    
+   
     message = MIMEMultipart()
     message["From"] = sender_email
     message["To"] = ", ".join(receiver_email)
     message["Subject"] = f"TSA Travel Update - {new_data['Date'].iloc[0].strftime('%Y-%m-%d')}"
-    
+   
     body = f"""
     <html>
     <body>
@@ -211,29 +236,29 @@ def send_email(new_data, seasonality_buf, yoy_buf, interactive_buf, excel_buffer
     </body>
     </html>
     """
-    
+   
     message.attach(MIMEText(body, "html"))
-    
+   
     # Attach seasonality visualization
     seasonality_image = MIMEImage(seasonality_buf.getvalue())
     seasonality_image.add_header('Content-ID', '<seasonality_plot>')
     message.attach(seasonality_image)
-    
+   
     # Attach YoY comparison visualization
     yoy_image = MIMEImage(yoy_buf.getvalue())
     yoy_image.add_header('Content-ID', '<yoy_plot>')
     message.attach(yoy_image)
-    
+   
     # Attach interactive HTML plot
     html_attachment = MIMEText(interactive_buf.getvalue(), 'html')
     html_attachment.add_header('Content-Disposition', 'attachment', filename='interactive_plot.html')
     message.attach(html_attachment)
-    
+   
     # Attach Excel file
     excel_attachment = MIMEApplication(excel_buffer.getvalue())
     excel_attachment.add_header('Content-Disposition', 'attachment', filename='tsa_data.xlsx')
     message.attach(excel_attachment)
-    
+   
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             logging.info("Connecting to SMTP server...")
@@ -250,15 +275,14 @@ def main():
     new_data = scrape_tsa_data()
     all_data = update_excel(new_data)
     seasonality_buf, yoy_buf, interactive_buf = create_visualizations(all_data)
-    
+   
     # Create a BytesIO object for the Excel file
     excel_buffer = io.BytesIO()
     with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
         all_data.to_excel(writer, index=False)
     excel_buffer.seek(0)
-    
+   
     send_email(new_data, seasonality_buf, yoy_buf, interactive_buf, excel_buffer)
 
 if __name__ == "__main__":
     main()
-
