@@ -139,18 +139,42 @@ def create_visualizations(data):
     seasonality_buf.seek(0)
     plt.close()
    
-    # Create YoY comparison chart
+ # Create YoY comparison chart with modified moving average
     plt.figure(figsize=(15, 8))
    
-    # Calculate 2-week moving average for current and previous year
-    data_prev_year = data[data['Year'] == previous_year].sort_values('Date')
-    data_current_year = data[data['Year'] == current_year].sort_values('Date')
+    # Get data for previous, current, and two years ago
+    current_year = datetime.now().year
+    previous_year = current_year - 1
+    two_years_ago = current_year - 2
    
-    data_prev_year['MA_14'] = data_prev_year['Travel Number'].rolling(window=14).mean()
-    data_current_year['MA_14'] = data_current_year['Travel Number'].rolling(window=14).mean()
+    data_two_years_ago = data[data['Year'] == two_years_ago].sort_values('Date').copy()
+    data_prev_year = data[data['Year'] == previous_year].sort_values('Date').copy()
+    data_current_year = data[data['Year'] == current_year].sort_values('Date').copy()
    
-    plt.plot(data_prev_year['DayOfYear'], data_prev_year['MA_14'], label=str(previous_year), color='#ff7f0e', linewidth=2)
-    plt.plot(data_current_year['DayOfYear'], data_current_year['MA_14'], label=str(current_year), color='#1f77b4', linewidth=2)
+    # Create continuous series for previous year (2024)
+    prev_year_end_2023 = data_two_years_ago.tail(14).copy()
+    prev_year_end_2023['DayOfYear'] = prev_year_end_2023['DayOfYear'] - 365
+    data_prev_extended = pd.concat([prev_year_end_2023, data_prev_year])
+    data_prev_extended = data_prev_extended.sort_values('DayOfYear')
+   
+    # Create continuous series for current year (2025)
+    prev_year_end_2024 = data_prev_year.tail(14).copy()
+    prev_year_end_2024['DayOfYear'] = prev_year_end_2024['DayOfYear'] - 365
+    data_current_extended = pd.concat([prev_year_end_2024, data_current_year])
+    data_current_extended = data_current_extended.sort_values('DayOfYear')
+   
+    # Calculate moving averages
+    data_prev_extended['MA_14'] = data_prev_extended['Travel Number'].rolling(window=14).mean()
+    data_current_extended['MA_14'] = data_current_extended['Travel Number'].rolling(window=14).mean()
+   
+    # Plot only the relevant portions (positive day of year)
+    plt.plot(data_prev_extended[data_prev_extended['DayOfYear'] >= 1]['DayOfYear'],
+             data_prev_extended[data_prev_extended['DayOfYear'] >= 1]['MA_14'],
+             label=str(previous_year), color='#ff7f0e', linewidth=2)
+             
+    plt.plot(data_current_extended[data_current_extended['DayOfYear'] >= 1]['DayOfYear'],
+             data_current_extended[data_current_extended['DayOfYear'] >= 1]['MA_14'],
+             label=str(current_year), color='#1f77b4', linewidth=2)
    
     plt.title(f'TSA Travel Numbers - YoY Comparison (2-Week Moving Average)', fontsize=16)
     plt.xlabel('Month', fontsize=12)
@@ -198,6 +222,7 @@ def create_visualizations(data):
     interactive_buf.seek(0)
    
     return seasonality_buf, yoy_buf, interactive_buf
+    
 
 # Function to send email
 def send_email(new_data, seasonality_buf, yoy_buf, interactive_buf, excel_buffer):
