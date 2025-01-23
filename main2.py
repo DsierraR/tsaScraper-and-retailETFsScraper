@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # Email Configuration
 sender_email = "dsierraramirez115@gmail.com"
-receiver_email = ["diegosierra01@yahoo.com", "arnav.ashruchi@gmail.com","jordan.valer@lmrpartners.com"]
+receiver_email = ["diegosierra01@yahoo.com", "arnav.ashruchi@gmail.com"]
 email_password = os.environ['EMAIL_PASSWORD']
 
 # AWS S3 Configuration
@@ -242,10 +242,16 @@ def send_email_with_visualization(new_row, previous_row):
     for i, ticker in enumerate(ETF_TICKERS_FIRST + ETF_TICKERS_SECOND):
         prev_value = previous_row.get(ticker)
         curr_value = values[i]
-        if prev_value != curr_value:
-            arrow = "🔺" if float(curr_value or 0) > float(prev_value or 0) else "🔻"
-            body += f"<p>{ticker}: {curr_value} {arrow} (previous: {prev_value})</p>"
-            changes = True
+
+        try:
+            is_increase = (float(curr_value) > float(prev_value)) if curr_value != 'N/A' and prev_value != 'N/A' else False
+            arrow = "🔺" if is_increase else "🔻" 
+            
+            if prev_value != curr_value and curr_value != 'N/A':
+                body += f"<p>{ticker}: {curr_value} {arrow} (previous: {prev_value})</p>"
+                changes = True
+        except (ValueError, TypeError):
+            continue
     
     if not changes:
         body += "<p>No changes in shares outstanding today.</p>"
